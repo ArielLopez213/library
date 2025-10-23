@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Libros</h1>
+
+<form method="get" class="form" style="max-width:520px">
+<label>Buscar (título/autor)
+<input type="text" name="q" value="{{ q }}">
+</label>
+<button class="btn" type="submit">Buscar</button>
+<a class="btn" href="{{ url_for('books') }}">Limpiar</a>
+</form>
+
+<table class="table">
+<thead>
+<tr><th>ID</th><th>Título</th><th>Autor</th><th>Año</th><th>Estado</th></tr>
+</thead>
+<tbody>
+{% for b in books %}
+<tr>
+<td>{{ b.book_id }}</td>
+<td>{{ b.title }}</td>
+<td>{{ b.author }}</td>
+<td>{{ b.year }}</td>
+<td>{{ 'Disponible' if b.available else 'Prestado' }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+<h2>Agregar libro</h2>
+<form method="post" class="form" style="max-width:420px">
+<label>Título <input name="title" required></label>
+<label>Autor <input name="author" required></label>
+<label>Año <input name="year" type="number" min="1" required></label>
+<button class="btn" type="submit">Guardar</button>
+</form>
+{% endblock %}
+

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Préstamos</h1>
+
+<h2>Activos</h2>
+<table class="table">
+  <thead><tr><th>Libro</th><th>Miembro</th><th>Acciones</th></tr></thead>
+  <tbody>
+    {% if not active %}
+      <tr><td colspan="3">No hay préstamos activos.</td></tr>
+    {% else %}
+      {% for it in active %}
+      <tr>
+        <td>[{{ it.book.book_id }}] {{ it.book.title }}</td>
+        <td>{% if it.member %}[{{ it.member.member_id }}] {{ it.member.name }}{% else %}-{% endif %}</td>
+        <td>
+          <form method="post" action="{{ url_for('return_book', book_id=it.book.book_id) }}" style="display:inline">
+            <button class="btn" type="submit">Devolver</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    {% endif %}
+  </tbody>
+</table>
+
+<h2>Registrar préstamo</h2>
+<form method="post" class="form" style="max-width:520px">
+  <label>Libro
+    <select name="book_id" required>
+      {% for b in books if b.available %}
+      <option value="{{ b.book_id }}">[{{ b.book_id }}] {{ b.title }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Miembro
+    <select name="member_id" required>
+      {% for m in members %}
+      <option value="{{ m.member_id }}">[{{ m.member_id }}] {{ m.name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <button class="btn" type="submit">Prestar</button>
+</form>
+{% endblock %}
+
+

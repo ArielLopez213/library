@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Miembros</h1>
+
+<table class="table">
+  <thead><tr><th>ID</th><th>Nombre</th></tr></thead>
+  <tbody>
+    {% for m in members %}
+    <tr><td>{{ m.member_id }}</td><td>{{ m.name }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h2>Agregar miembro</h2>
+<form method="post" class="form" style="max-width:420px">
+  <label>Nombre <input name="name" required></label>
+  <button class="btn" type="submit">Guardar</button>
+</form>
+{% endblock %}
+
+
+
