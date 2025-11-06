@@ -1,97 +1,135 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
-from library import Library
-from models import Book, Member
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from models import GestorRestaurante
 
 app = Flask(__name__)
-app.secret_key = "dev-key"
+app.secret_key = 'restaurante_secret_key'
 
-lib = Library()
+# Instancia del gestor del restaurante
+gestor = GestorRestaurante()
 
-def seed_if_empty():
-    if not lib.books and not lib.members:
-        lib.add_book("El Principito", "Antoine de Saint-Exupéry", 1943)
-        lib.add_book("Cien años de soledad", "Gabriel García Márquez", 1967)
-        lib.add_book("Don Quijote de la Mancha", "Miguel de Cervantes", 1605)
-        lib.add_member("Ana Pérez")
-        lib.add_member("Luis Gómez")
-        lib.add_member("María López")
+# Datos de ejemplo
+def cargar_datos_ejemplo():
+    """Carga algunos platos de ejemplo"""
+    if not gestor.listar_platos():
+        gestor.agregar_plato("Pizza Margherita", "Pizza clásica con tomate, mozzarella y albahaca", 12.99, "Principal", 20)
+        gestor.agregar_plato("Hamburguesa Clásica", "Carne de res, lechuga, tomate y queso cheddar", 10.50, "Principal", 15)
+        gestor.agregar_plato("Ensalada César", "Lechuga romana, crutones, parmesano y aderezo césar", 8.75, "Ensaladas", 10)
+        gestor.agregar_plato("Tiramisú", "Postre italiano clásico con café y cacao", 6.25, "Postres", 5)
+        gestor.agregar_plato("Sopa del Día", "Sopa casera preparada diariamente", 5.99, "Entradas", 8)
 
-@app.route("/")
+# Rutas principales
+@app.route('/')
 def index():
-    seed_if_empty()
-    totals = {
-        "books": len(lib.books),
-        "members": len(lib.members),
-        "available": len(lib.list_available())
-    }
-    active_loans = totals["books"] - totals["available"]
-    return render_template("index.html", totals=totals, active_loans=active_loans)
+    """Página principal del restaurante"""
+    return render_template('index.html')
 
-@app.route("/books", methods=["GET", "POST"])
-def books():
-    seed_if_empty()
-    if request.method == "POST":
-        try:
-            t = request.form.get("title", "").strip()
-            a = request.form.get("author", "").strip()
-            y = int(request.form.get("year", "0"))
-            if not t or not a or not y:
-                raise ValueError("Título, autor y año son requeridos.")
-            lib.add_book(t, a, y)
-            flash("Libro agregado.", "success")
-            return redirect(url_for("books"))
-        except Exception as e:
-            flash(str(e), "error")
-    q = request.args.get("q", "").strip()
-    books = lib.search_books(q) if q else lib.books
-    return render_template("books.html", books=books, q=q)
+@app.route('/menu')
+def ver_menu():
+    """Muestra el menú completo"""
+    platos = gestor.listar_platos()
+    categorias = set(plato.categoria for plato in platos)
+    
+    categoria_seleccionada = request.args.get('categoria', '')
+    if categoria_seleccionada:
+        platos = gestor.buscar_platos_por_categoria(categoria_seleccionada)
+    
+    return render_template('menu.html', 
+                         platos=platos, 
+                         categorias=categorias, 
+                         categoria_seleccionada=categoria_seleccionada)
 
-@app.route("/books/return/<int:book_id>", methods=["POST"])
-def return_book(book_id: int):
-    try:
-        lib.return_book(book_id)
-        flash("Libro devuelto.", "success")
-    except Exception as e:
-        flash(str(e), "error")
-    return redirect(url_for("loans"))
+# Rutas CRUD para platos
+@app.route('/platos/agregar', methods=['GET', 'POST'])
+def agregar_plato():
+    """Agrega un nuevo plato al menú"""
+    if request.method == 'POST':
+        nombre = request.form['nombre']
+        descripcion = request.form['descripcion']
+        precio = float(request.form['precio'])
+        categoria = request.form['categoria']
+        tiempo_preparacion = int(request.form['tiempo_preparacion'])
+        
+        gestor.agregar_plato(nombre, descripcion, precio, categoria, tiempo_preparacion)
+        flash('Plato agregado exitosamente!', 'success')
+        return redirect(url_for('ver_menu'))
+    
+    return render_template('agregar_plato.html')
 
-@app.route("/members", methods=["GET", "POST"])
-def members():
-    seed_if_empty()
-    if request.method == "POST":
-        try:
-            name = request.form.get("name", "").strip()
-            if not name:
-                raise ValueError("El nombre es requerido.")
-            lib.add_member(name)
-            flash("Miembro agregado.", "success")
-            return redirect(url_for("members"))
-        except Exception as e:
-            flash(str(e), "error")
-    return render_template("members.html", members=lib.members)
+@app.route('/platos/editar/<int:plato_id>', methods=['GET', 'POST'])
+def editar_plato(plato_id):
+    """Edita un plato existente"""
+    plato = gestor.buscar_plato_por_id(plato_id)
+    
+    if not plato:
+        flash('Plato no encontrado', 'error')
+        return redirect(url_for('ver_menu'))
+    
+    if request.method == 'POST':
+        nombre = request.form['nombre']
+        descripcion = request.form['descripcion']
+        precio = float(request.form['precio'])
+        categoria = request.form['categoria']
+        tiempo_preparacion = int(request.form['tiempo_preparacion'])
+        disponible = 'disponible' in request.form
+        
+        gestor.actualizar_plato(plato_id, 
+                               nombre=nombre, 
+                               descripcion=descripcion, 
+                               precio=precio, 
+                               categoria=categoria, 
+                               tiempo_preparacion=tiempo_preparacion,
+                               disponible=disponible)
+        
+        flash('Plato actualizado exitosamente!', 'success')
+        return redirect(url_for('ver_menu'))
+    
+    return render_template('editar_plato.html', plato=plato)
 
-@app.route("/loans", methods=["GET", "POST"])
-def loans():
-    seed_if_empty()
-    if request.method == "POST":
-        try:
-            book_id = int(request.form.get("book_id"))
-            member_id = int(request.form.get("member_id"))
-            lib.lend_book(book_id, member_id)
-            flash("¡Préstamo registrado!", "success")
-            return redirect(url_for("loans"))
-        except Exception as e:
-            flash(str(e), "error")
+@app.route('/platos/eliminar/<int:plato_id>', methods=['GET', 'POST'])
+def eliminar_plato(plato_id):
+    """Elimina un plato del menú"""
+    plato = gestor.buscar_plato_por_id(plato_id)
+    
+    if not plato:
+        flash('Plato no encontrado', 'error')
+        return redirect(url_for('ver_menu'))
+    
+    if request.method == 'POST':
+        gestor.eliminar_plato(plato_id)
+        flash('Plato eliminado exitosamente!', 'success')
+        return redirect(url_for('ver_menu'))
+    
+    return render_template('eliminar_plato.html', plato=plato)
 
-    active = []
-    for book in lib.books:
-        if not book.available:
-            mid = next((mid for bid, mid in lib._loans.items() if bid == book.book_id), None)
-            member = lib.find_member_by_id(mid) if mid else None
-            active.append({"book": book, "member": member})
-    return render_template("loans.html", books=lib.books, members=lib.members, active=active)
+@app.route('/platos/toggle_disponible/<int:plato_id>')
+def toggle_disponible_plato(plato_id):
+    """Cambia la disponibilidad de un plato"""
+    plato = gestor.buscar_plato_por_id(plato_id)
+    
+    if plato:
+        nuevo_estado = not plato.disponible
+        gestor.cambiar_disponibilidad_plato(plato_id, nuevo_estado)
+        estado = "disponible" if nuevo_estado else "no disponible"
+        flash(f'Plato marcado como {estado}!', 'success')
+    
+    return redirect(url_for('ver_menu'))
 
-if __name__ == "__main__":
-    app.run(debug=True)
+# API endpoints
+@app.route('/api/platos')
+def api_platos():
+    """Endpoint API para obtener todos los platos en JSON"""
+    platos = [plato.to_dict() for plato in gestor.listar_platos()]
+    return jsonify(platos)
 
+@app.route('/api/platos/<int:plato_id>')
+def api_plato(plato_id):
+    """Endpoint API para obtener un plato específico en JSON"""
+    plato = gestor.buscar_plato_por_id(plato_id)
+    if plato:
+        return jsonify(plato.to_dict())
+    return jsonify({'error': 'Plato no encontrado'}), 404
+
+if __name__ == '__main__':
+    cargar_datos_ejemplo()
+    app.run(debug=True, port=5000)
     

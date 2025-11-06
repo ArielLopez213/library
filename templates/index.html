@@ -1,24 +1,30 @@
 {% extends "base.html" %}
-{% block content %}
-<h1>Mini Biblioteca</h1>
-<p>Demo <strong>sencilla</strong>: Flask + POO, sin base de datos (almacenamiento en memoria).</p>
 
-<div class="cards">
-  <div class="card"><h3>Libros</h3><p class="kpi">{{ totals.books }}</p></div>
-  <div class="card"><h3>Miembros</h3><p class="kpi">{{ totals.members }}</p></div>
-  <div class="card"><h3>Disponibles</h3><p class="kpi">{{ totals.available }}</p></div>
-  <div class="card"><h3>Préstamos activos</h3><p class="kpi">{{ active_loans }}</p></div>
+{% block title %}Inicio - Restaurante Delicias{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <h1>Bienvenido al Sistema de Gestión del Restaurante</h1>
+    <p>Gestiona tu menú y pedidos de manera eficiente</p>
 </div>
 
-<section class="explain">
-  <h2>POO aplicada</h2>
-  <ul>
-    <li><strong>Clases:</strong> <code>Book</code>, <code>Member</code>, <code>Library</code>.</li>
-    <li><strong>Estado y métodos:</strong> <code>Book.mark_borrowed()</code> / <code>mark_returned()</code>.</li>
-    <li><strong>Reglas de negocio:</strong> <code>Library.lend_book()</code> y <code>return_book()</code>.</li>
-    <li><strong>Separación simple:</strong> lógica en módulos <code>models.py</code> y <code>library.py</code> reutilizados por Flask.</li>
-  </ul>
-</section>
+<div class="stats">
+    <div class="stat-card">
+        <h3>{{ gestor.listar_platos()|length }}</h3>
+        <p>Platos en el Menú</p>
+    </div>
+    <div class="stat-card">
+        <h3>{{ gestor.listar_platos()|selectattr('disponible')|list|length }}</h3>
+        <p>Platos Disponibles</p>
+    </div>
+    <div class="stat-card">
+        <h3>{{ "%.2f"|format(gestor.listar_platos()|map(attribute='precio')|max) }}</h3>
+        <p>Precio Más Alto</p>
+    </div>
+</div>
+
+<div class="actions">
+    <a href="{{ url_for('ver_menu') }}" class="btn btn-primary">Ver Menú Completo</a>
+    <a href="{{ url_for('agregar_plato') }}" class="btn btn-secondary">Agregar Nuevo Plato</a>
+</div>
 {% endblock %}
-
-

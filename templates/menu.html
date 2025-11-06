@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Menú - Restaurante Delicias{% endblock %}
+
+{% block content %}
+<div class="header-actions">
+    <h1>Nuestro Menú</h1>
+    <a href="{{ url_for('agregar_plato') }}" class="btn btn-primary">➕ Agregar Plato</a>
+</div>
+
+<!-- Filtros por categoría -->
+<div class="filters">
+    <strong>Filtrar por categoría:</strong>
+    <a href="{{ url_for('ver_menu') }}" class="filter-btn {% if not categoria_seleccionada %}active{% endif %}">
+        Todas
+    </a>
+    {% for cat in categorias %}
+    <a href="{{ url_for('ver_menu', categoria=cat) }}" 
+       class="filter-btn {% if categoria_seleccionada == cat %}active{% endif %}">
+        {{ cat }}
+    </a>
+    {% endfor %}
+</div>
+
+<div class="menu-grid">
+    {% for plato in platos %}
+    <div class="plato-card {% if not plato.disponible %}unavailable{% endif %}">
+        <div class="plato-header">
+            <h3>{{ plato.nombre }}</h3>
+            <span class="price">${{ "%.2f"|format(plato.precio) }}</span>
+        </div>
+        <p class="description">{{ plato.descripcion }}</p>
+        <div class="plato-details">
+            <span class="category">{{ plato.categoria }}</span>
+            <span class="time">⏱️ {{ plato.tiempo_preparacion }} min</span>
+            <span class="status {% if plato.disponible %}available{% else %}unavailable{% endif %}">
+                {{ 'Disponible' if plato.disponible else 'No disponible' }}
+            </span>
+        </div>
+        <div class="plato-actions">
+            <a href="{{ url_for('editar_plato', plato_id=plato.id) }}" class="btn btn-sm btn-warning">✏️ Editar</a>
+            <a href="{{ url_for('eliminar_plato', plato_id=plato.id) }}" class="btn btn-sm btn-danger">🗑️ Eliminar</a>
+            <a href="{{ url_for('toggle_disponible_plato', plato_id=plato.id) }}" 
+               class="btn btn-sm {% if plato.disponible %}btn-secondary{% else %}btn-success{% endif %}">
+                {{ 'Ocultar' if plato.disponible else 'Mostrar' }}
+            </a>
+        </div>
+    </div>
+    {% else %}
+    <div class="no-platos">
+        <p>No hay platos en el menú.</p>
+        <a href="{{ url_for('agregar_plato') }}" class="btn btn-primary">Agregar primer plato</a>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
